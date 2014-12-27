@@ -19,9 +19,11 @@ static void parse_support(const char *name)
     dup[dot] = 0;
 
     // FIXME: memory overflow
-    printf("name: %s\n", dup);
-    printf("at:   %s\n", &dup[at + 1]);
-    printf("dot:  %s\n", &dup[dot + 1]);
+    printf("bin:    %s\n", dup);
+    if (at != len)
+        printf("term:   %s\n", &dup[at + 1]);
+    if (dot != len)
+        printf("status: %s\n", &dup[dot + 1]);
     printf("\n");
 }
 
