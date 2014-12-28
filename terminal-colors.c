@@ -41,9 +41,6 @@ static void parse_support(const char *name, const char *filter)
 
     if (term) {
         printf("  term: %.*s\n", type - term, term);
-
-        // TODO: return lengths instead
-        *p = 0;
     }
 
     printf("  name: %.*s\n",
