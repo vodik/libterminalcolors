@@ -19,6 +19,7 @@ static void parse_support(const char *name, const char *filter)
     p = memrchr(name, '.', len);
     const char *type = p ? p + 1 : name;
 
+    printf("\n> parsing %s\n", name);
     if (strcmp(type, "disable") == 0)
         printf("DISABLE:\n");
     else if (strcmp(type, "enable") == 0)
@@ -33,19 +34,19 @@ static void parse_support(const char *name, const char *filter)
         return;
     }
 
-    // TODO: return lengths instead
-    *p = 0;
-
-    p = memchr(name, '@', p - name);
+    p = memchr(name, '@', type - name - 1);
     const char *term = p ? p + 1 : NULL;
 
     if (term) {
-        printf("  term: %.*s\n", type - term, term);
+        printf("  term: %.*s\n", type - term - 1, term);
     }
 
-    printf("  name: %.*s\n",
-           name[0] ? len : p - name,
-           name[0] ? name : "*");
+
+    size_t name_len = (term ? term : type) - name - 1;
+    if (name_len)
+        printf("  name: %.*s\n", name_len, name);
+    else
+        printf("  name: *\n");
 }
 
 static void search_support(const char *filter)
