@@ -88,15 +88,6 @@ static void colors_init(int mode, const char *name)
     if (access(TERMINAL_COLORS, R_OK) < 0)
         err(1, "couldn't access terminal-colors.d");
 
-    // TODO: disable can be overridden by an explicit enable
-    int test = access(TERMINAL_COLORS "disable", R_OK);
-    if (test == 0) {
-        printf("TERMINAL COLORS DISABLED!\n");
-        return;
-    } else if (test < 0 && errno != ENOENT) {
-        err(1, "couldn't access terminal-colors.d/disable");
-    }
-
     colors_readdir(name);
 }
 
