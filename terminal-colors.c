@@ -18,7 +18,7 @@ enum {
     COLORS_ALWAYS,
 };
 
-static void colors_parse_filename(const char *name, const char *filter)
+static void colors_parse_filename(const char *name)
 {
     char *p;
     size_t len = strlen(name);
@@ -55,12 +55,12 @@ static void colors_parse_filename(const char *name, const char *filter)
         printf("  name: *\n");
 }
 
-static void colors_readdir(const char *filter)
+static void colors_readdir(const char *path)
 {
     int dirfd;
     DIR *dirp;
 
-    dirfd = open(TERMINAL_COLORS, O_RDONLY | O_DIRECTORY);
+    dirfd = open(path, O_RDONLY | O_DIRECTORY);
     if (dirfd < 0)
         err(1, "couldn't access terminal-colors.d");
 
@@ -73,7 +73,7 @@ static void colors_readdir(const char *filter)
         if (dp->d_type != DT_REG && dp->d_type != DT_LNK && dp->d_type != DT_UNKNOWN)
             continue;
 
-        colors_parse_filename(dp->d_name, filter);
+        colors_parse_filename(dp->d_name);
     }
 }
 
@@ -88,7 +88,7 @@ static void colors_init(int mode, const char *name)
     if (access(TERMINAL_COLORS, R_OK) < 0)
         err(1, "couldn't access terminal-colors.d");
 
-    colors_readdir(name);
+    colors_readdir(TERMINAL_COLORS);
 }
 
 int main(int argc, char *argv[])
