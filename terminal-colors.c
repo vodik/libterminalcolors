@@ -18,7 +18,7 @@ enum {
     COLORS_ALWAYS,
 };
 
-static void parse_support(const char *name, const char *filter)
+static void colors_parse_filename(const char *name, const char *filter)
 {
     char *p;
     size_t len = strlen(name);
@@ -48,7 +48,6 @@ static void parse_support(const char *name, const char *filter)
         printf("  term: %.*s\n", type - term - 1, term);
     }
 
-
     size_t name_len = (term ? term : type) - name - 1;
     if (name_len)
         printf("  name: %.*s\n", name_len, name);
@@ -56,7 +55,7 @@ static void parse_support(const char *name, const char *filter)
         printf("  name: *\n");
 }
 
-static void search_support(const char *filter)
+static void colors_readdir(const char *filter)
 {
     int dirfd;
     DIR *dirp;
@@ -74,7 +73,7 @@ static void search_support(const char *filter)
         if (dp->d_type != DT_REG && dp->d_type != DT_LNK && dp->d_type != DT_UNKNOWN)
             continue;
 
-        parse_support(dp->d_name, filter);
+        colors_parse_filename(dp->d_name, filter);
     }
 }
 
@@ -98,7 +97,7 @@ static void colors_init(int mode, const char *name)
         err(1, "couldn't access terminal-colors.d/disable");
     }
 
-    search_support(name);
+    colors_readdir(name);
 }
 
 int main(int argc, char *argv[])
