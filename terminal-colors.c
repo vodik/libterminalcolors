@@ -11,6 +11,13 @@
 #define TERMINAL_COLORS "/etc/terminal-colors.d/"
 #endif
 
+enum {
+    COLORS_UNDEF = -1,
+    COLORS_AUTO = 0,
+    COLORS_NEVER,
+    COLORS_ALWAYS,
+};
+
 static void parse_support(const char *name, const char *filter)
 {
     char *p;
@@ -71,8 +78,14 @@ static void search_support(const char *filter)
     }
 }
 
-int main(int argc, char *argv[])
+static void colors_init(int mode, const char *name)
 {
+    int atty = -1;
+
+    if (mode == COLORS_UNDEF && isatty(STDOUT_FILENO)) {
+        printf("IS A TTY, WILL CONSIDER ENABLE\n");
+    }
+
     if (access(TERMINAL_COLORS, R_OK) < 0)
         err(1, "couldn't access terminal-colors.d");
 
@@ -80,10 +93,18 @@ int main(int argc, char *argv[])
     int test = access(TERMINAL_COLORS "disable", R_OK);
     if (test == 0) {
         printf("TERMINAL COLORS DISABLED!\n");
-        return 0;
+        return;
     } else if (test < 0 && errno != ENOENT) {
         err(1, "couldn't access terminal-colors.d/disable");
     }
 
-    search_support("dmesg");
+    search_support(name);
+}
+
+int main(int argc, char *argv[])
+{
+    int mode = COLORS_UNDEF;
+    const char *name = program_invocation_short_name;
+
+    colors_init(mode, name);
 }
