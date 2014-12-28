@@ -11,24 +11,44 @@
 #define TERMINAL_COLORS "/etc/terminal-colors.d/"
 #endif
 
-static void parse_support(const char *name)
+static void parse_support(const char *name, const char *filter)
 {
-    char *dup = strdup(name);
+    char *p, *dup = strdup(name);
     size_t len = strlen(name);
 
-    size_t at = strcspn(name, "@");
-    size_t dot = strcspn(name, ".");
+    p = memrchr(dup, '.', len);
+    const char *type = p ? p + 1 : dup;
 
-    dup[at] = 0;
-    dup[dot] = 0;
+    if (strcmp(type, "disable") == 0)
+        printf("DISABLE:\n");
+    else if (strcmp(type, "enable") == 0)
+        printf("ENABLE:\n");
+    else if (strcmp(type, "scheme") == 0)
+        printf("SCHEME:\n");
+    else
+        printf("UNKNOWN:\n");
 
-    // FIXME: memory overflow
-    printf("bin:    %s\n", dup);
-    if (at != len)
-        printf("term:   %s\n", &dup[at + 1]);
-    if (dot != len)
-        printf("status: %s\n", &dup[dot + 1]);
-    printf("\n");
+    if (type == dup) {
+        printf("  globally\n");
+        return;
+    }
+
+    // TODO: return lengths instead
+    *p = 0;
+
+    p = memchr(dup, '@', p - dup);
+    const char *term = p ? p + 1 : NULL;
+
+    if (term) {
+        printf("  term: %s\n", term);
+
+        // TODO: return lengths instead
+        *p = 0;
+    }
+
+    printf("  name: %s\n", dup[0] ? dup : "*");
+
+    free(dup);
 }
 
 static void search_support(const char *filter)
@@ -49,13 +69,12 @@ static void search_support(const char *filter)
         if (dp->d_type != DT_REG && dp->d_type != DT_UNKNOWN)
             continue;
 
-        parse_support(dp->d_name);
+        parse_support(dp->d_name, filter);
     }
 }
 
 int main(int argc, char *argv[])
 {
-
     if (access(TERMINAL_COLORS, R_OK) < 0)
         err(1, "couldn't access terminal-colors.d");
 
@@ -68,5 +87,5 @@ int main(int argc, char *argv[])
         err(1, "couldn't access terminal-colors.d/disable");
     }
 
-    search_support(NULL);
+    search_support("dmesg");
 }
