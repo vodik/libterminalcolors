@@ -13,11 +13,11 @@
 
 static void parse_support(const char *name, const char *filter)
 {
-    char *p, *dup = strdup(name);
+    char *p;
     size_t len = strlen(name);
 
-    p = memrchr(dup, '.', len);
-    const char *type = p ? p + 1 : dup;
+    p = memrchr(name, '.', len);
+    const char *type = p ? p + 1 : name;
 
     if (strcmp(type, "disable") == 0)
         printf("DISABLE:\n");
@@ -28,7 +28,7 @@ static void parse_support(const char *name, const char *filter)
     else
         printf("UNKNOWN:\n");
 
-    if (type == dup) {
+    if (type == name) {
         printf("  globally\n");
         return;
     }
@@ -36,19 +36,19 @@ static void parse_support(const char *name, const char *filter)
     // TODO: return lengths instead
     *p = 0;
 
-    p = memchr(dup, '@', p - dup);
+    p = memchr(name, '@', p - name);
     const char *term = p ? p + 1 : NULL;
 
     if (term) {
-        printf("  term: %s\n", term);
+        printf("  term: %.*s\n", type - term, term);
 
         // TODO: return lengths instead
         *p = 0;
     }
 
-    printf("  name: %s\n", dup[0] ? dup : "*");
-
-    free(dup);
+    printf("  name: %.*s\n",
+           name[0] ? len : p - name,
+           name[0] ? name : "*");
 }
 
 static void search_support(const char *filter)
@@ -66,7 +66,7 @@ static void search_support(const char *filter)
 
     const struct dirent *dp;
     while ((dp = readdir(dirp))) {
-        if (dp->d_type != DT_REG && dp->d_type != DT_UNKNOWN)
+        if (dp->d_type != DT_REG && dp->d_type != DT_LNK && dp->d_type != DT_UNKNOWN)
             continue;
 
         parse_support(dp->d_name, filter);
