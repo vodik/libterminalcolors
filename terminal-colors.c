@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -33,8 +34,10 @@ static void colors_parse_filename(const char *name)
         printf("ENABLE:\n");
     else if (strcmp(type, "scheme") == 0)
         printf("SCHEME:\n");
-    else
+    else {
         printf("UNKNOWN:\n");
+        return;
+    }
 
     if (type == name) {
         printf("  globally\n");
@@ -77,18 +80,26 @@ static void colors_readdir(const char *path)
     }
 }
 
-static void colors_init(int mode, const char *name)
+static bool colors_init(int mode, const char *name)
 {
     int atty = -1;
 
     if (mode == COLORS_UNDEF && isatty(STDOUT_FILENO)) {
         printf("IS A TTY, WILL CONSIDER ENABLE\n");
+
+        colors_readdir(TERMINAL_COLORS);
+        mode = COLORS_AUTO;
     }
 
-    if (access(TERMINAL_COLORS, R_OK) < 0)
-        err(1, "couldn't access terminal-colors.d");
-
-    colors_readdir(TERMINAL_COLORS);
+    switch (mode) {
+    case COLORS_AUTO:
+        return atty == -1 ? isatty(STDOUT_FILENO) : atty;
+    case COLORS_ALWAYS:
+        return true;
+    case COLORS_NEVER:
+    default:
+        return false;
+    }
 }
 
 int main(int argc, char *argv[])
@@ -96,5 +107,8 @@ int main(int argc, char *argv[])
     int mode = COLORS_UNDEF;
     const char *name = program_invocation_short_name;
 
-    colors_init(mode, name);
+    if (colors_init(mode, name))
+        printf("COLORS ENABLED\n");
+    else
+        printf("COLORS DISABLED\n");
 }
