@@ -51,7 +51,7 @@ static void colors_parse_filename(const char *name, const char *filter, struct t
     int *field = NULL;
     int calc = 1;
 
-    printf("\n> parsing %s\n", name);
+    printf("\n> parsing '%s'\n", name);
     if (strcmp(type, "disable") == 0) {
         printf("DISABLE:\n");
         field = &score->disable;
@@ -95,7 +95,7 @@ static void colors_parse_filename(const char *name, const char *filter, struct t
         /*}}}*/
     }
 
-    printf("COMPARING %d vs %d\n", *field, calc);
+    printf("COMPARING %d vs %d: score %d\n", *field, calc, max(*field, calc));
     *field = max(*field, calc);
 }
 
@@ -125,7 +125,7 @@ static int colors_readdir(const char *path, const char *name)
     printf("  enable: %d\n", score.enable);
     printf("  disable: %d\n", score.disable);
 
-    return score.enable > score.disable ? COLORS_AUTO : COLORS_NEVER;
+    return score.disable > score.enable ? COLORS_NEVER: COLORS_AUTO;
 }
 
 static bool colors_init(int mode, const char *name)
