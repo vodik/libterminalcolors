@@ -58,7 +58,7 @@ static void colors_parse_filename(const char *name)
         printf("  name: *\n");
 }
 
-static void colors_readdir(const char *path)
+static int colors_readdir(const char *path)
 {
     int dirfd;
     DIR *dirp;
@@ -78,6 +78,8 @@ static void colors_readdir(const char *path)
 
         colors_parse_filename(dp->d_name);
     }
+
+    return COLORS_AUTO;
 }
 
 static bool colors_init(int mode, const char *name)
@@ -86,9 +88,7 @@ static bool colors_init(int mode, const char *name)
 
     if (mode == COLORS_UNDEF && isatty(STDOUT_FILENO)) {
         printf("IS A TTY, WILL CONSIDER ENABLE\n");
-
-        colors_readdir(TERMINAL_COLORS);
-        mode = COLORS_AUTO;
+        mode = colors_readdir(TERMINAL_COLORS);
     }
 
     switch (mode) {
