@@ -19,46 +19,91 @@ enum {
     COLORS_ALWAYS,
 };
 
-static void colors_parse_filename(const char *name)
+ #define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
+
+/*
+* The terminal-colors.d/ evaluation is based on "scores":
+*
+* filename score
+* ---------------------------------------
+* type 1
+* @termname.type 10 + 1
+* utilname.type 20 + 1
+* utilname@termname.type 20 + 10 + 1
+*
+* the match with higher score wins. The score is per type.
+*/
+struct term_score {
+    int enable;
+    int disable;
+};
+
+static void colors_parse_filename(const char *name, const char *filter, struct term_score *score)
 {
     char *p;
     size_t len = strlen(name);
 
     p = memrchr(name, '.', len);
     const char *type = p ? p + 1 : name;
+    int *result = NULL;
+    int calc = 1;
 
     printf("\n> parsing %s\n", name);
-    if (strcmp(type, "disable") == 0)
+    if (strcmp(type, "disable") == 0) {
         printf("DISABLE:\n");
-    else if (strcmp(type, "enable") == 0)
+        result = &score->disable;
+    } else if (strcmp(type, "enable") == 0) {
         printf("ENABLE:\n");
-    else if (strcmp(type, "scheme") == 0)
+        result = &score->enable;
+    } else if (strcmp(type, "scheme") == 0) {
         printf("SCHEME:\n");
-    else {
+        return;
+    } else {
         printf("UNKNOWN:\n");
         return;
     }
 
+    calc = 1;
+
     if (type == name) {
         printf("  globally\n");
-        return;
+        goto store;
     }
 
     p = memchr(name, '@', type - name - 1);
     const char *term = p ? p + 1 : NULL;
 
+    size_t name_len = (term ? term : type) - name - 1;
+
+    /*{{{ DEBUGGING*/
     if (term) {
-        printf("  term: %.*s\n", (int)(type - term - 1), term);
+        size_t term_len = type - term - 1;
+        if (strncmp(term, getenv("TERM"), term_len) == 0) {
+            printf("TERM MATCH!\n");
+            calc += 10;
+        }
+        printf("  term: %.*s\n", (int)term_len, term);
     }
 
-    size_t name_len = (term ? term : type) - name - 1;
-    if (name_len)
+    if (name_len) {
+        if (strncmp(name, filter, name_len) == 0) {
+            printf("NAME MATCH!\n");
+            calc += 20;
+        }
         printf("  name: %.*s\n", (int)name_len, name);
-    else
+    } else
         printf("  name: *\n");
+    /*}}}*/
+
+store:
+    printf("COMPARING %d vs %d\n", *result, calc);
+    *result = max(*result, calc);
 }
 
-static int colors_readdir(const char *path)
+static int colors_readdir(const char *path, const char *name)
 {
     int dirfd;
     DIR *dirp;
@@ -71,15 +116,20 @@ static int colors_readdir(const char *path)
     if (!dirp)
         err(1, "fdopendir failed");
 
+    struct term_score score = {};
     const struct dirent *dp;
     while ((dp = readdir(dirp))) {
         if (dp->d_type != DT_REG && dp->d_type != DT_LNK && dp->d_type != DT_UNKNOWN)
             continue;
 
-        colors_parse_filename(dp->d_name);
+        colors_parse_filename(dp->d_name, name, &score);
     }
 
-    return COLORS_AUTO;
+    printf("\nRESULTS FOR %s\n", name);
+    printf("  enable: %d\n", score.enable);
+    printf("  disable: %d\n", score.disable);
+
+    return score.enable > score.disable ? COLORS_AUTO : COLORS_NEVER;
 }
 
 static bool colors_init(int mode, const char *name)
@@ -88,7 +138,7 @@ static bool colors_init(int mode, const char *name)
 
     if (mode == COLORS_UNDEF && isatty(STDOUT_FILENO)) {
         printf("IS A TTY, WILL CONSIDER ENABLE\n");
-        mode = colors_readdir(TERMINAL_COLORS);
+        mode = colors_readdir(TERMINAL_COLORS, name);
     }
 
     switch (mode) {
