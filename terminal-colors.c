@@ -48,16 +48,16 @@ static void colors_parse_filename(const char *name, const char *filter, struct t
 
     p = memrchr(name, '.', len);
     const char *type = p ? p + 1 : name;
-    int *result = NULL;
+    int *field = NULL;
     int calc = 1;
 
     printf("\n> parsing %s\n", name);
     if (strcmp(type, "disable") == 0) {
         printf("DISABLE:\n");
-        result = &score->disable;
+        field = &score->disable;
     } else if (strcmp(type, "enable") == 0) {
         printf("ENABLE:\n");
-        result = &score->enable;
+        field = &score->enable;
     } else if (strcmp(type, "scheme") == 0) {
         printf("SCHEME:\n");
         return;
@@ -66,41 +66,37 @@ static void colors_parse_filename(const char *name, const char *filter, struct t
         return;
     }
 
-    calc = 1;
-
     if (type == name) {
         printf("  globally\n");
-        goto store;
+    } else {
+        p = memchr(name, '@', type - name - 1);
+        const char *term = p ? p + 1 : NULL;
+
+        size_t name_len = (term ? term : type) - name - 1;
+
+        /*{{{ DEBUGGING*/
+        if (term) {
+            size_t term_len = type - term - 1;
+            if (strncmp(term, getenv("TERM"), term_len) == 0) {
+                printf("TERM MATCH!\n");
+                calc += 10;
+            }
+            printf("  term: %.*s\n", (int)term_len, term);
+        }
+
+        if (name_len) {
+            if (strncmp(name, filter, name_len) == 0) {
+                printf("NAME MATCH!\n");
+                calc += 20;
+            }
+            printf("  name: %.*s\n", (int)name_len, name);
+        } else
+            printf("  name: *\n");
+        /*}}}*/
     }
 
-    p = memchr(name, '@', type - name - 1);
-    const char *term = p ? p + 1 : NULL;
-
-    size_t name_len = (term ? term : type) - name - 1;
-
-    /*{{{ DEBUGGING*/
-    if (term) {
-        size_t term_len = type - term - 1;
-        if (strncmp(term, getenv("TERM"), term_len) == 0) {
-            printf("TERM MATCH!\n");
-            calc += 10;
-        }
-        printf("  term: %.*s\n", (int)term_len, term);
-    }
-
-    if (name_len) {
-        if (strncmp(name, filter, name_len) == 0) {
-            printf("NAME MATCH!\n");
-            calc += 20;
-        }
-        printf("  name: %.*s\n", (int)name_len, name);
-    } else
-        printf("  name: *\n");
-    /*}}}*/
-
-store:
-    printf("COMPARING %d vs %d\n", *result, calc);
-    *result = max(*result, calc);
+    printf("COMPARING %d vs %d\n", *field, calc);
+    *field = max(*field, calc);
 }
 
 static int colors_readdir(const char *path, const char *name)
