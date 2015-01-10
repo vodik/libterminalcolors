@@ -48,12 +48,12 @@ static void colors_parse_filename(const char *name)
     const char *term = p ? p + 1 : NULL;
 
     if (term) {
-        printf("  term: %.*s\n", type - term - 1, term);
+        printf("  term: %.*s\n", (int)(type - term - 1), term);
     }
 
     size_t name_len = (term ? term : type) - name - 1;
     if (name_len)
-        printf("  name: %.*s\n", name_len, name);
+        printf("  name: %.*s\n", (int)name_len, name);
     else
         printf("  name: *\n");
 }
