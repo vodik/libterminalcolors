@@ -150,8 +150,13 @@ static bool colors_init(int mode, const char *name)
 
 int main(int argc, char *argv[])
 {
+    if (argc != 2) {
+        fprintf(stderr, "%s [program name]\n", program_invocation_short_name);
+        return 1;
+    }
+
     int mode = COLORS_UNDEF;
-    const char *name = program_invocation_short_name;
+    const char *name = argv[1];
 
     if (colors_init(mode, name))
         printf("COLORS ENABLED\n");
