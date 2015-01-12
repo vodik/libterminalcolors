@@ -88,7 +88,10 @@ static void colors_parse_filename(const char *name, const char *filter, struct t
             if (strncmp(name, filter, name_len) == 0) {
                 printf("NAME MATCH!\n");
                 calc += 20;
+            } else {
+                calc = 0;
             }
+
             printf("  name: %.*s\n", (int)name_len, name);
         } else
             printf("  name: *\n");
