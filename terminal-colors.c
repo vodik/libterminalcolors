@@ -19,10 +19,10 @@ enum {
     COLORS_ALWAYS,
 };
 
- #define max(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
+static inline int max(int a, int b)
+{
+     return a > b ? a : b;
+}
 
 /*
 * The terminal-colors.d/ evaluation is based on "scores":
