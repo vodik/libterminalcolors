@@ -51,54 +51,36 @@ static void colors_parse_filename(const char *name, const char *filter, struct t
     int *field = NULL;
     int calc = 1;
 
-    printf("\n> parsing '%s'\n", name);
     if (strcmp(type, "disable") == 0) {
-        printf("DISABLE:\n");
         field = &score->disable;
     } else if (strcmp(type, "enable") == 0) {
-        printf("ENABLE:\n");
         field = &score->enable;
     } else if (strcmp(type, "scheme") == 0) {
-        printf("SCHEME:\n");
         return;
     } else {
-        printf("UNKNOWN:\n");
         return;
     }
 
-    if (type == name) {
-        printf("  globally\n");
-    } else {
+    if (type != name) {
         p = memchr(name, '@', type - name - 1);
         const char *term = p ? p + 1 : NULL;
 
         size_t name_len = (term ? term : type) - name - 1;
 
-        /*{{{ DEBUGGING*/
         if (term) {
             size_t term_len = type - term - 1;
-            if (strncmp(term, getenv("TERM"), term_len) == 0) {
-                printf("TERM MATCH!\n");
+            if (strncmp(term, getenv("TERM"), term_len) == 0)
                 calc += 10;
-            }
-            printf("  term: %.*s\n", (int)term_len, term);
         }
 
         if (name_len) {
-            if (strncmp(name, filter, name_len) == 0) {
-                printf("NAME MATCH!\n");
+            if (strncmp(name, filter, name_len) == 0)
                 calc += 20;
-            } else {
+            else
                 calc = 0;
-            }
-
-            printf("  name: %.*s\n", (int)name_len, name);
-        } else
-            printf("  name: *\n");
-        /*}}}*/
+        }
     }
 
-    printf("COMPARING %d vs %d: score %d\n", *field, calc, max(*field, calc));
     *field = max(*field, calc);
 }
 
@@ -124,7 +106,7 @@ static int colors_readdir(const char *path, const char *name)
         colors_parse_filename(dp->d_name, name, &score);
     }
 
-    printf("\nRESULTS FOR %s\n", name);
+    printf("RESULTS FOR %s\n", name);
     printf("  enable: %d\n", score.enable);
     printf("  disable: %d\n", score.disable);
 
@@ -135,10 +117,8 @@ static bool colors_init(int mode, const char *name)
 {
     int atty = -1;
 
-    if (mode == COLORS_UNDEF && isatty(STDOUT_FILENO)) {
-        printf("IS A TTY, WILL CONSIDER ENABLE\n");
+    if (mode == COLORS_UNDEF && isatty(STDOUT_FILENO))
         mode = colors_readdir(TERMINAL_COLORS, name);
-    }
 
     switch (mode) {
     case COLORS_AUTO:
