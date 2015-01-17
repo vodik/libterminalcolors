@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <err.h>
 #include <dirent.h>
+#include <limits.h>
 
 #ifndef TERMINAL_COLORS
 #define TERMINAL_COLORS "/etc/terminal-colors.d/"
@@ -102,6 +103,20 @@ static void colors_parse_filename(const char *name, const char *filter, struct t
     }
 }
 
+static int colors_read_scheme(const char *name)
+{
+    FILE *fp = fopen(name, "r");
+    if (!fp)
+        return -errno;
+
+    char buf[LINE_MAX];
+    while (fgets(buf, sizeof(buf), fp)) {
+        printf("line: %s\n", buf);
+    }
+
+    return 0;
+}
+
 static int colors_readdir(const char *path, const char *name)
 {
     int dirfd;
@@ -128,6 +143,14 @@ static int colors_readdir(const char *path, const char *name)
     printf("  enable: %d\n", score.enable);
     printf("  disable: %d\n", score.disable);
     printf("  scheme: %s\n", score.scheme);
+
+    { /* HACKS */
+        char *tmp;
+        asprintf(&tmp, "%s/%s", TERMINAL_COLORS, score.scheme);
+
+        if (colors_read_scheme(tmp) < 0)
+            err(1, "failed to read scheme %s", tmp);
+    }
 
     return score.disable > score.enable ? COLORS_NEVER: COLORS_AUTO;
 }
