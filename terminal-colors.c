@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -12,6 +13,34 @@
 #ifndef TERMINAL_COLORS
 #define TERMINAL_COLORS "/etc/terminal-colors.d/"
 #endif
+
+#define UL_COLOR_RESET          "0"
+#define UL_COLOR_BOLD           "1"
+#define UL_COLOR_HALFBRIGHT     "2"
+#define UL_COLOR_UNDERSCORE     "4"
+#define UL_COLOR_BLINK          "5"
+#define UL_COLOR_REVERSE        "7"
+
+/* Standard colors */
+#define UL_COLOR_BLACK          "30"
+#define UL_COLOR_RED            "31"
+#define UL_COLOR_GREEN          "32"
+#define UL_COLOR_BROWN          "33"  /* well, brown */
+#define UL_COLOR_BLUE           "34"
+#define UL_COLOR_MAGENTA        "35"
+#define UL_COLOR_CYAN           "36"
+#define UL_COLOR_GRAY           "37"
+
+/* Bold variants */
+#define UL_COLOR_DARK_GRAY      "1;30"
+#define UL_COLOR_BOLD_RED       "1;31"
+#define UL_COLOR_BOLD_GREEN     "1;32"
+#define UL_COLOR_BOLD_YELLOW    "1;33"
+#define UL_COLOR_BOLD_BLUE      "1;34"
+#define UL_COLOR_BOLD_MAGENTA   "1;35"
+#define UL_COLOR_BOLD_CYAN      "1;36"
+#define UL_COLOR_WHITE          "1;37"
+
 
 enum {
     COLORS_UNDEF = -1,
@@ -48,6 +77,51 @@ struct term_score {
     int disable;
     char *scheme;
 };
+
+struct ul_color_scheme {
+    char *name;
+    char *seq;
+};
+
+static int cmp_scheme_name(const void *a0, const void *b0)
+{
+    struct ul_color_scheme *a = (struct ul_color_scheme *)a0,
+                           *b = (struct ul_color_scheme *)b0;
+    return strcmp(a->name, b->name);
+}
+
+
+const char *color_sequence_from_colorname(const char *str)
+{
+    static const struct ul_color_scheme basic_schemes[] = {
+        { "black", UL_COLOR_BLACK },
+        { "blue", UL_COLOR_BLUE },
+        { "brown", UL_COLOR_BROWN },
+        { "cyan", UL_COLOR_CYAN },
+        { "darkgray", UL_COLOR_DARK_GRAY },
+        { "gray", UL_COLOR_GRAY },
+        { "green", UL_COLOR_GREEN },
+        { "lightblue", UL_COLOR_BOLD_BLUE },
+        { "lightcyan", UL_COLOR_BOLD_CYAN },
+        { "lightgray,", UL_COLOR_GRAY },
+        { "lightgreen", UL_COLOR_BOLD_GREEN },
+        { "lightmagenta", UL_COLOR_BOLD_MAGENTA },
+        { "lightred", UL_COLOR_BOLD_RED },
+        { "magenta", UL_COLOR_MAGENTA },
+        { "red", UL_COLOR_RED },
+        { "yellow", UL_COLOR_BOLD_YELLOW },
+    };
+    const size_t basic_scheme_len = sizeof(basic_schemes) / sizeof(basic_schemes[0]);
+    struct ul_color_scheme key = { .name = (char *)str }, *res;
+
+    if (!str)
+        return NULL;
+
+    res = bsearch(&key, basic_schemes, basic_scheme_len,
+                  sizeof(struct ul_color_scheme),
+                  cmp_scheme_name);
+    return res ? res->seq : NULL;
+}
 
 static void colors_parse_filename(const char *name, const char *filter, struct term_score *score)
 {
@@ -124,7 +198,10 @@ static int colors_read_scheme(const char *name)
         int rc = sscanf(p, "%128[^ ] %128[^\n ]", cn, seq);
 
         if (rc == 2 && *cn && *seq) {
-            printf("%s = %s\n", cn, seq);
+            if (*seq != '\\' && isalpha(*seq))
+                printf("%s = %s\n", cn, color_sequence_from_colorname(seq));
+            else
+                printf("%s = %s\n", cn, seq);
         }
     }
 
