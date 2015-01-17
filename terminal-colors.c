@@ -36,9 +36,16 @@ static inline int max(int a, int b)
 *
 * the match with higher score wins. The score is per type.
 */
+enum term_type {
+    COLORS_ENABLE,
+    COLORS_DISABLE,
+    COLORS_SCHEME
+};
+
 struct term_score {
     int enable;
     int disable;
+    char *scheme;
 };
 
 static void colors_parse_filename(const char *name, const char *filter, struct term_score *score)
@@ -48,15 +55,15 @@ static void colors_parse_filename(const char *name, const char *filter, struct t
 
     p = memrchr(name, '.', len);
     const char *type = p ? p + 1 : name;
-    int *field = NULL;
+    enum term_type field;
     int calc = 1;
 
     if (strcmp(type, "disable") == 0) {
-        field = &score->disable;
+        field = COLORS_DISABLE;
     } else if (strcmp(type, "enable") == 0) {
-        field = &score->enable;
+        field = COLORS_ENABLE;
     } else if (strcmp(type, "scheme") == 0) {
-        return;
+        field = COLORS_SCHEME;
     } else {
         return;
     }
@@ -77,11 +84,22 @@ static void colors_parse_filename(const char *name, const char *filter, struct t
             if (strncmp(name, filter, name_len) == 0)
                 calc += 20;
             else
-                calc = 0;
+                return;
         }
     }
 
-    *field = max(*field, calc);
+    switch (field) {
+    case COLORS_DISABLE:
+        score->disable = max(score->disable, calc);
+        break;
+    case COLORS_ENABLE:
+        score->enable = max(score->enable, calc);
+        break;
+    case COLORS_SCHEME:
+        free(score->scheme);
+        score->scheme = strdup(name);
+        break;
+    }
 }
 
 static int colors_readdir(const char *path, const char *name)
@@ -109,6 +127,7 @@ static int colors_readdir(const char *path, const char *name)
     printf("RESULTS FOR %s\n", name);
     printf("  enable: %d\n", score.enable);
     printf("  disable: %d\n", score.disable);
+    printf("  scheme: %s\n", score.scheme);
 
     return score.disable > score.enable ? COLORS_NEVER: COLORS_AUTO;
 }
