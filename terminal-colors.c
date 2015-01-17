@@ -111,7 +111,21 @@ static int colors_read_scheme(const char *name)
 
     char buf[LINE_MAX];
     while (fgets(buf, sizeof(buf), fp)) {
-        printf("line: %s\n", buf);
+        size_t len = strcspn(buf, "\n");
+        buf[len] = '\0';
+
+        // skip whitespace
+        char *p = buf + strspn(buf, " \t");
+        if (*p == '\0' || *p == '#')
+            continue;
+
+        // parsing borrowed from util-linux
+        char cn[129], seq[129];
+        int rc = sscanf(p, "%128[^ ] %128[^\n ]", cn, seq);
+
+        if (rc == 2 && *cn && *seq) {
+            printf("%s = %s\n", cn, seq);
+        }
     }
 
     return 0;
